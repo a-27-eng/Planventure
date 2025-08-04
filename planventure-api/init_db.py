@@ -1,7 +1,7 @@
 import os
 import sys
 from app import create_app
-from models import db, User
+from models import db, User, Trip
 
 def init_database():
     """Initialize the database with tables."""
@@ -17,13 +17,10 @@ def init_database():
             db_path = app.config['SQLALCHEMY_DATABASE_URI']
             print(f"Database URI: {db_path}")
             
-            # Ask user if they want to drop existing tables
-            if os.path.exists('planventure.db'):
-                choice = input("\nDatabase already exists. Drop existing tables? (y/N): ").lower()
-                if choice == 'y' or choice == 'yes':
-                    print("Dropping existing tables...")
-                    db.drop_all()
-                    print("✓ Existing tables dropped")
+            # Always drop existing tables to handle schema changes
+            print("Dropping existing tables (if any)...")
+            db.drop_all()
+            print("✓ Existing tables dropped")
             
             # Create all tables
             print("Creating database tables...")
@@ -42,27 +39,25 @@ def init_database():
                     if not email:
                         email = "test@example.com"
                     
-                    password = input("Enter test user password (default: TestPassword123): ").strip()
+                    password = input("Enter test user password (default: TestPassword123!): ").strip()
                     if not password:
-                        password = "TestPassword123"
+                        password = "TestPassword123!"
+                    
+                    # Ask if user should be admin
+                    is_admin_input = input("Make this user an admin? (y/N): ").lower()
+                    is_admin = is_admin_input == 'y' or is_admin_input == 'yes'
                     
                     # Validate email
                     if not User.validate_email(email):
                         print("❌ Invalid email format!")
                         return False
                     
-                    # Validate password
-                    is_valid, message = User.validate_password(password)
-                    if not is_valid:
-                        print(f"❌ Password validation failed: {message}")
-                        return False
-                    
                     # Create test user
                     try:
-                        test_user = User(email=email, password=password)
+                        test_user = User(email=email, password=password, is_admin=is_admin)
                         db.session.add(test_user)
                         db.session.commit()
-                        print(f"✓ Test user created: {test_user.email}")
+                        print(f"✓ Test user created: {test_user.email} (Admin: {test_user.is_admin})")
                     except Exception as e:
                         print(f"❌ Error creating test user: {str(e)}")
                         db.session.rollback()
@@ -72,6 +67,7 @@ def init_database():
             print("\n" + "=" * 50)
             print("Database initialization completed successfully!")
             print(f"Total users: {User.query.count()}")
+            print(f"Total trips: {Trip.query.count()}")
             print("=" * 50)
             return True
             
