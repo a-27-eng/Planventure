@@ -17,29 +17,35 @@ class JWTUtils:
     @staticmethod
     def generate_tokens(user_id, additional_claims=None):
         """Generate access and refresh tokens for a user."""
-        if additional_claims is None:
-            additional_claims = {}
-        
-        additional_claims['iat'] = datetime.utcnow()
-        
-        access_token = create_access_token(
-            identity=user_id,
-            additional_claims=additional_claims,
-            expires_delta=timedelta(hours=1)
-        )
-        
-        refresh_token = create_refresh_token(
-            identity=user_id,
-            expires_delta=timedelta(days=30)
-        )
-        
-        return {
-            'access_token': access_token,
-            'refresh_token': refresh_token,
-            'token_type': 'bearer',
-            'expires_in': 3600,
-            'expires_at': (datetime.utcnow() + timedelta(hours=1)).isoformat()
-        }
+        try:
+            if additional_claims is None:
+                additional_claims = {}
+            
+            # Ensure user_id is a string
+            user_identity = str(user_id)
+            
+            # Generate tokens
+            access_token = create_access_token(
+                identity=user_identity,
+                additional_claims=additional_claims,
+                expires_delta=timedelta(hours=1)
+            )
+            
+            refresh_token = create_refresh_token(
+                identity=user_identity,
+                additional_claims=additional_claims,
+                expires_delta=timedelta(days=30)
+            )
+            
+            return {
+                'access_token': access_token,
+                'refresh_token': refresh_token,
+                'token_type': 'bearer',
+                'expires_in': 3600
+            }
+            
+        except Exception as e:
+            raise Exception(f"Token generation failed: {str(e)}")
 
 def jwt_required_custom(optional=False):
     """Custom JWT required decorator."""
