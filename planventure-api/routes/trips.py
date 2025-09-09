@@ -172,32 +172,47 @@ def create_trip():
             'details': str(e)
         }), 500
 
-@trips_bp.route('/<int:trip_id>', methods=['GET'])
-@optional_auth
-def get_trip(trip_id):
-    """Get a specific trip by ID."""
-    try:
-        trip = Trip.query.get(trip_id)
-        if not trip:
-            return jsonify({'error': 'Trip not found'}), 404
-        
-        # Check if user can view this trip
-        current_user_id = get_current_user_id()
-        if current_user_id != trip.user_id:
-            # Only allow if admin
-            current_user = User.query.get(current_user_id) if current_user_id else None
-            if not current_user or not current_user.is_admin:
-                return jsonify({'error': 'Unauthorized to view this trip'}), 403
-        
-        return jsonify({
-            'trip': trip.to_dict()
-        }), 200
+@trips_bp.route('/<int:trip_id>', methods=['GET', 'PUT', 'DELETE'])
+@require_auth
+def handle_trip(trip_id):
+    current_user = g.current_user  # ✅ Fixed: Use g.current_user
     
-    except Exception as e:
-        return jsonify({
-            'error': 'Failed to retrieve trip',
-            'details': str(e)
-        }), 500
+    # Get trip
+    trip = Trip.query.filter_by(id=trip_id, user_id=current_user.id).first()
+    if not trip:
+        return jsonify({'error': 'Trip not found'}), 404
+    
+    if request.method == 'GET':
+        return jsonify({'trip': trip.to_dict()}), 200
+    
+    elif request.method == 'PUT':
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        # Update fields
+        for field in ['title', 'destination', 'start_date', 'end_date', 'description', 'budget', 'status', 'latitude', 'longitude', 'itinerary']:
+            if field in data:
+                setattr(trip, field, data[field])
+        
+        try:
+            db.session.commit()
+            return jsonify({
+                'message': 'Trip updated successfully',
+                'trip': trip.to_dict()
+            }), 200
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': f'Update failed: {str(e)}'}), 500
+    
+    elif request.method == 'DELETE':
+        try:
+            db.session.delete(trip)
+            db.session.commit()
+            return jsonify({'message': 'Trip deleted successfully'}), 200
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': f'Delete failed: {str(e)}'}), 500
 
 @trips_bp.route('/stats', methods=['GET'])
 @require_auth
