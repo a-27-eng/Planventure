@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Planventure API 🚁
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/github-samples/planventure)
@@ -56,3 +57,7 @@ flask run
 ## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+=======
+# Planventure
+A Flask-based REST API backend for the Planventure application.
+>>>>>>> c3e3d0d4a0017517aa93a9406eb6ca857a6a591a
